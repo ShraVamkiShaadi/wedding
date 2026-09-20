@@ -240,14 +240,29 @@ img{max-width:100%}
 <script src="https://cdn.jsdelivr.net/npm/motion@13.4.0/dist/motion.js"></script>
 <script>
 const reduceMotion=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+if('scrollRestoration' in history)history.scrollRestoration='manual';
+if(document.body.classList.contains('locked'))window.scrollTo(0,0);
+window.addEventListener('pageshow',()=>{
+  if(document.body.classList.contains('locked'))requestAnimationFrame(()=>window.scrollTo(0,0));
+});
 
 // ---------- Intro gate ----------
 const intro=document.getElementById('intro');
-document.getElementById('enter').onclick=()=>{
+const enterButton=document.getElementById('enter');
+enterButton.onclick=()=>{
+  enterButton.blur();
+  window.scrollTo(0,0);
   const finish=()=>{
     intro.classList.add('hidden');
     document.body.classList.remove('locked');
-    initExperience();
+    window.scrollTo(0,0);
+    requestAnimationFrame(()=>{
+      window.scrollTo(0,0);
+      requestAnimationFrame(()=>{
+        window.scrollTo(0,0);
+        initExperience();
+      });
+    });
   };
   if(!reduceMotion&&window.gsap){
     gsap.to(intro,{opacity:0,scale:1.035,duration:.8,ease:'power2.inOut',onComplete:finish});
