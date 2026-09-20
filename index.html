@@ -22,6 +22,8 @@
 html,body{margin:0;width:100%;background:var(--cream);color:var(--ink);font-family:Georgia,"Times New Roman",serif;-webkit-text-size-adjust:100%}
 body{overflow-x:hidden;min-height:100%;-webkit-overflow-scrolling:touch;overscroll-behavior-x:none}
 body.locked{overflow:hidden;height:100vh;height:100dvh;min-height:100svh}
+#scrollProgress{position:fixed;z-index:100;top:0;left:0;width:100%;height:3px;transform:scaleX(0);transform-origin:left center;
+  background:linear-gradient(90deg,#e8c37a,#fff0b8,#b92738);box-shadow:0 0 12px rgba(232,195,122,.7);pointer-events:none}
 @supports (-webkit-touch-callout:none){
   html,body{width:100%;min-height:100%;-webkit-tap-highlight-color:transparent}
   #intro{min-height:100svh;height:100dvh}
@@ -71,8 +73,12 @@ img{max-width:100%}
 .section{position:relative;z-index:3;padding:0 16px;margin:56px auto;max-width:920px}
 .section:first-of-type{margin-top:44px}
 .section:last-of-type{margin-bottom:64px}
-.card{width:min(94vw,440px);margin:0 auto;border-radius:22px;overflow:hidden;box-shadow:0 18px 46px rgba(76,13,22,.20),0 2px 10px rgba(76,13,22,.10);background:#fff;display:block}
+.card{position:relative;width:min(94vw,440px);margin:0 auto;border-radius:22px;overflow:hidden;box-shadow:0 18px 46px rgba(76,13,22,.20),0 2px 10px rgba(76,13,22,.10);background:#fff;display:block;transform-style:preserve-3d;will-change:transform,opacity,clip-path}
 .card img{width:100%;height:auto;display:block}
+.card::after{content:"";position:absolute;z-index:4;inset:-40% -90%;pointer-events:none;opacity:0;transform:translateX(-55%) rotate(18deg);
+  background:linear-gradient(90deg,transparent 38%,rgba(255,244,205,.5) 50%,transparent 62%)}
+.card.is-arriving::after{animation:arrivalShimmer 1.35s .18s ease-out both}
+@keyframes arrivalShimmer{0%{opacity:0;transform:translateX(-55%) rotate(18deg)}22%{opacity:.75}100%{opacity:0;transform:translateX(55%) rotate(18deg)}}
 .heading-block{text-align:center;padding:0 12px}
 .heading-block .kicker{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--maroon-text)}
 .heading-block h2{font-family:Georgia,serif;font-weight:400;font-size:clamp(26px,7vw,36px);color:var(--maroon);margin:10px 0 6px}
@@ -133,9 +139,14 @@ img{max-width:100%}
 .finale .fheart{position:relative;z-index:2;font-size:24px;margin:6px 0 16px}
 .finale .fdate{position:relative;z-index:2;font-size:16px;letter-spacing:1.5px;color:#f1e2c8}
 .finale .ftag{position:relative;z-index:2;font-family:'ScriptSerif',Georgia,serif;font-style:italic;font-size:17px;color:var(--gold);margin-top:12px;letter-spacing:.5px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}
+  #scrollProgress{display:none}
+}
 </style>
 </head>
 <body class="locked">
+<div id="scrollProgress" aria-hidden="true"></div>
 <div id="intro">
   <div class="intro-card">
     <div class="monogram">S<span style="font-size:.7em">V</span></div>
@@ -223,12 +234,24 @@ img{max-width:100%}
   </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@13.4.0/dist/motion.js"></script>
 <script>
+const reduceMotion=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
 // ---------- Intro gate ----------
 const intro=document.getElementById('intro');
 document.getElementById('enter').onclick=()=>{
-  intro.classList.add('hidden');
-  document.body.classList.remove('locked');
+  const finish=()=>{
+    intro.classList.add('hidden');
+    document.body.classList.remove('locked');
+    initExperience();
+  };
+  if(!reduceMotion&&window.gsap){
+    gsap.to(intro,{opacity:0,scale:1.035,duration:.8,ease:'power2.inOut',onComplete:finish});
+  }else finish();
 };
 
 // ---------- Live Muhurtham countdown ----------
@@ -236,7 +259,12 @@ document.getElementById('enter').onclick=()=>{
   const target=new Date('2026-10-14T08:54:00+05:30').getTime();
   const els={d:document.getElementById('cd-days'),h:document.getElementById('cd-hours'),m:document.getElementById('cd-mins'),s:document.getElementById('cd-secs')};
   function pad(n){return String(n).padStart(2,'0')}
-  function tick(){const diff=Math.max(0,target-Date.now());els.d.textContent=pad(Math.floor(diff/86400000));els.h.textContent=pad(Math.floor(diff/3600000)%24);els.m.textContent=pad(Math.floor(diff/60000)%60);els.s.textContent=pad(Math.floor(diff/1000)%60)}
+  function setNumber(el,value){
+    if(el.textContent===value)return;
+    el.textContent=value;
+    if(!reduceMotion&&window.anime&&anime.animate){anime.animate(el,{opacity:[.35,1],y:[-7,0],scale:[.92,1],duration:380,ease:'outExpo'})}
+  }
+  function tick(){const diff=Math.max(0,target-Date.now());setNumber(els.d,pad(Math.floor(diff/86400000)));setNumber(els.h,pad(Math.floor(diff/3600000)%24));setNumber(els.m,pad(Math.floor(diff/60000)%60));setNumber(els.s,pad(Math.floor(diff/1000)%60))}
   tick();setInterval(tick,1000);
 })();
 
@@ -363,6 +391,61 @@ document.getElementById('enter').onclick=()=>{
   window.addEventListener('load',sizeDecor);
   window.addEventListener('resize',sizeDecor);
   setTimeout(sizeDecor,400);
+})();
+
+// ---------- Layered entrance, text and scroll animation ----------
+let experienceStarted=false;
+function initExperience(){
+  if(experienceStarted)return; experienceStarted=true;
+  if(reduceMotion)return;
+
+  if(window.gsap&&window.ScrollTrigger){
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('.section').forEach((section,index)=>{
+      const card=section.querySelector('.card');
+      const image=card&&card.querySelector('img');
+      const text=section.querySelectorAll('.heading-block > *, .venue-card > *, .finale > *');
+      const timeline=gsap.timeline({
+        scrollTrigger:{trigger:section,start:'top 88%',once:true}
+      });
+      timeline.fromTo(section,{autoAlpha:0,y:72},{autoAlpha:1,y:0,duration:.9,ease:'power3.out'});
+      if(card){
+        timeline.fromTo(card,
+          {clipPath:'inset(0 0 100% 0 round 22px)',rotateY:index%2?7:-7,rotateX:4,scale:.95},
+          {clipPath:'inset(0 0 0% 0 round 22px)',rotateY:0,rotateX:0,scale:1,duration:1.15,ease:'power4.out',onStart:()=>card.classList.add('is-arriving')},0);
+      }
+      if(image){timeline.fromTo(image,{scale:1.12,filter:'saturate(.72) brightness(.86)'},{scale:1,filter:'saturate(1) brightness(1)',duration:1.45,ease:'power3.out'},.08)}
+      if(text.length){timeline.fromTo(text,{autoAlpha:0,y:24},{autoAlpha:1,y:0,duration:.65,stagger:.09,ease:'power2.out'},.15)}
+    });
+    requestAnimationFrame(()=>ScrollTrigger.refresh());
+  }
+
+  if(window.Motion&&Motion.animate){
+    const heart=document.querySelector('.fheart');
+    const directions=document.querySelector('.directions');
+    if(heart)Motion.animate(heart,{scale:[1,1.18,1],y:[0,-5,0]},{duration:2.6,repeat:Infinity,ease:'easeInOut'});
+    if(directions)Motion.animate(directions,{boxShadow:['0 10px 26px rgba(140,95,30,.22)','0 13px 34px rgba(140,95,30,.5)','0 10px 26px rgba(140,95,30,.22)']},{duration:2.8,repeat:Infinity,ease:'easeInOut'});
+  }
+
+  const progress=document.getElementById('scrollProgress');
+  const updateProgress=()=>{
+    const max=document.documentElement.scrollHeight-innerHeight;
+    progress.style.transform='scaleX('+(max>0?Math.min(1,scrollY/max):0)+')';
+  };
+  addEventListener('scroll',updateProgress,{passive:true});
+  updateProgress();
+}
+
+(function introMotion(){
+  if(reduceMotion)return;
+  if(window.anime&&anime.animate){
+    anime.animate('#intro .monogram, #intro .eyebrow, #intro h1, #intro p, #intro .enter',{
+      opacity:[0,1],y:[28,0],scale:[.96,1],delay:anime.stagger(95),duration:900,ease:'outExpo'
+    });
+  }
+  if(window.Motion&&Motion.animate){
+    Motion.animate('#intro .monogram',{y:[0,-6,0],rotate:[-2,2,-2]},{duration:4.2,repeat:Infinity,ease:'easeInOut'});
+  }
 })();
 </script>
 </body>
