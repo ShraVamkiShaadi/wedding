@@ -56,6 +56,8 @@ img{max-width:100%}
 .intro-card p{font-style:italic;color:#ead8bd;margin:10px 0 28px;font-size:16px}
 .enter{appearance:none;border:1px solid #e8c37a;background:transparent;color:#fff4df;padding:13px 28px;letter-spacing:3px;text-transform:uppercase;font-size:11px;cursor:pointer;font-family:inherit}
 .enter:hover{background:rgba(232,195,122,.12)}
+.music-toggle{position:fixed;z-index:45;right:14px;bottom:14px;display:none;border:1px solid rgba(189,135,54,.45);border-radius:999px;background:rgba(255,250,240,.9);color:#7f2030;padding:9px 13px;font:600 11px/1.2 Arial,sans-serif;letter-spacing:.5px;box-shadow:0 8px 24px rgba(76,13,22,.16);cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.music-toggle.visible{display:block}
 .hidden{opacity:0;visibility:hidden;pointer-events:none}
 
 /* ---------- Page flow / decoration ---------- */
@@ -158,6 +160,10 @@ img{max-width:100%}
 </div>
 
 <div id="petals"></div>
+<audio id="weddingAudio" preload="auto" loop playsinline>
+  <source src="assets/audio.mpeg" type="audio/mpeg">
+</audio>
+<button class="music-toggle" id="musicToggle" type="button" aria-pressed="false" aria-label="Toggle wedding music">Music: Off</button>
 
 <div id="flow">
   <div id="decor"></div>
@@ -249,8 +255,31 @@ window.addEventListener('pageshow',()=>{
 // ---------- Intro gate ----------
 const intro=document.getElementById('intro');
 const enterButton=document.getElementById('enter');
+const weddingAudio=document.getElementById('weddingAudio');
+const musicToggle=document.getElementById('musicToggle');
+function updateMusicButton(){
+  const playing=!weddingAudio.paused;
+  musicToggle.textContent=playing?'Music: On':'Music: Off';
+  musicToggle.setAttribute('aria-pressed',String(playing));
+}
+function startWeddingAudio(){
+  weddingAudio.volume=.7;
+  musicToggle.classList.add('visible');
+  const playback=weddingAudio.play();
+  if(playback)playback.then(updateMusicButton).catch(updateMusicButton);
+}
+musicToggle.addEventListener('click',()=>{
+  if(weddingAudio.paused){
+    const playback=weddingAudio.play();
+    if(playback)playback.then(updateMusicButton).catch(updateMusicButton);
+  }else{
+    weddingAudio.pause();
+    updateMusicButton();
+  }
+});
 enterButton.onclick=()=>{
   enterButton.blur();
+  startWeddingAudio();
   window.scrollTo(0,0);
   const finish=()=>{
     intro.classList.add('hidden');
